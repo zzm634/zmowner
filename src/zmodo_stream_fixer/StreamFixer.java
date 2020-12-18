@@ -20,46 +20,13 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import zm.packets.StreamUtils;
+
 public class StreamFixer {
 
 	private static final int BUFFER_SIZE = 4096;
 
 	private static final int SIZE_OFFSET = 24;
-
-	/**
-	 * returns false if eof is reached, otherwise, repeatedly reads from the input
-	 * stream enough to exactly fill the buffer
-	 *
-	 * @throws IOException
-	 * @throws InterruptedException
-	 */
-	private static final boolean blockingRead(InputStream in, byte[] buffer, int offset, int length)
-			throws IOException, InterruptedException {
-
-		int bytesRead = 0;
-		while (true) {
-			if (Thread.interrupted()) {
-				throw new InterruptedException();
-			}
-
-			int r = in.read(buffer, bytesRead, length - bytesRead);
-			if (r == -1)
-				return false;
-			bytesRead += r;
-			if (bytesRead == length)
-				return true;
-		}
-	}
-
-	// Reads and discards the given number of bytes
-	private static final boolean blockingDiscard(InputStream in, int bytes) throws IOException {
-		while (bytes-- > 0) {
-			int r = in.read();
-			if (r == -1)
-				return false;
-		}
-		return true;
-	}
 
 	private static final byte[] OODC_HEADER = { 0x30, 0x30, 0x64, 0x63 };
 	private static final byte[] o1dc_header = { 0x30, 0x31, 0x64, 0x63 };
@@ -102,14 +69,13 @@ public class StreamFixer {
 
 			while (!Thread.interrupted()) {
 				// read the header
-				if (!blockingRead(in, header, 0, 4))
-					return;
+
+				StreamUtils.blockingReadExact(in, header, 0, 4);
 
 				boolean encrypted = Arrays.equals(header, OODC_HEADER);
 
 				// read the size
-				if (!blockingRead(in, size, 0, 4))
-					return;
+				StreamUtils.blockingReadExact(in, size, 0, 4);
 
 				sizebb.rewind();
 				int chunkSize = sizebb.getInt();
@@ -117,8 +83,7 @@ public class StreamFixer {
 				// skip the rest of the header and get to the data
 
 				// read extra data and throw it away
-				if (!blockingDiscard(in, SIZE_OFFSET))
-					return;
+				StreamUtils.blockingDiscardExact(in, SIZE_OFFSET);
 
 				// copy the chunk data
 
@@ -135,7 +100,7 @@ public class StreamFixer {
 					cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivS);
 
 					byte encryptedData[] = new byte[ENCRYPTED_BYTES];
-					blockingRead(in, encryptedData, 0, ENCRYPTED_BYTES);
+					StreamUtils.blockingReadExact(in, encryptedData, 0, ENCRYPTED_BYTES);
 
 					byte decryptedData[] = cipher.doFinal(encryptedData);
 
@@ -150,8 +115,7 @@ public class StreamFixer {
 				while (chunkSize > 0) {
 					int toRead = Math.min(BUFFER_SIZE, chunkSize);
 
-					if (!blockingRead(in, buffer, 0, toRead))
-						return;
+					StreamUtils.blockingReadExact(in, buffer, 0, toRead);
 					if (PRINT_HEX) {
 						System.out.print(byteToHex(buffer, 0, toRead));
 					} else {
