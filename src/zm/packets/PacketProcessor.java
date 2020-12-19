@@ -1,11 +1,6 @@
 package zm.packets;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.Map;
 
 /**
  * PacketProcessor handles the incoming data feed directly from the camera.
@@ -27,24 +22,39 @@ public class PacketProcessor extends Processor<PacketIdentifier> {
 		return PacketIdentifier.get(header);
 	}
 
-	public static PacketProcessor getDefaultProcessor(String aesKey) {
+	public static PacketProcessor getDefaultProcessor(String aesKey, boolean singleStream) {
 		PacketProcessor pp = new PacketProcessor();
 
 		int channel = 0;
-		for(PacketIdentifier i : PacketIdentifier.IFRAME_IDS) {
-			pp.registerHandler(i, new VideoFrameHandler(channel++));
+		for (PacketIdentifier i : PacketIdentifier.IFRAME_IDS) {
+			Integer ch = singleStream ? null : channel;
+
+			Handler h = new VideoFrameHandler(ch);
+
+			if (singleStream && channel != 0) {
+				h = new Nullify(h);
+			}
+
+			pp.registerHandler(i, h);
+
+			channel++;
 		}
 
 		channel = 0;
-		for(PacketIdentifier p : PacketIdentifier.PFRAME_IDS) {
+		for (PacketIdentifier p : PacketIdentifier.PFRAME_IDS) {
+			Integer ch = singleStream ? null : channel;
 
-			Handler h = aesKey != null ?
-					new VideoFrameHandler(channel,aesKey) :
-						new VideoFrameHandler(channel);
+			Handler h = aesKey != null
+					? new VideoFrameHandler(channel, aesKey)
+					: new VideoFrameHandler(channel);
 
-			channel++;
+			if (singleStream && channel != 0) {
+				h = new Nullify(h);
+			}
 
 			pp.registerHandler(p, h);
+
+			channel++;
 		}
 
 		pp.registerHandler(PacketIdentifier.COMMAND, CommandProcessor.getDefaultProcessor(pp));

@@ -11,6 +11,7 @@ import java.io.OutputStream;
  * @author zm
  */
 public class StreamUtils {
+
 	/**
 	 * Reads the desired number of bytes from the given input stream into the given
 	 * buffer, repeating as necessary until the buffer is filled or EOF has been
