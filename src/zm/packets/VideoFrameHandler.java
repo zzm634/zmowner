@@ -15,13 +15,14 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-public class VideoFrameHandler implements PacketHandler {
+public class VideoFrameHandler implements Handler {
 
 
 	/**
 	 * No decryption. Used for I-frames
 	 */
-	public VideoFrameHandler() {
+	public VideoFrameHandler(Integer channel) {
+		this.channel = channel;
 		this.assumeEncrypted = false;
 		this.decryptor = null;
 		this.key = null;
@@ -32,11 +33,11 @@ public class VideoFrameHandler implements PacketHandler {
 	 *
 	 * @param key
 	 */
-	public VideoFrameHandler(String key) {
-		this(key.getBytes());
+	public VideoFrameHandler(Integer channel, String key) {
+		this(channel, key.getBytes());
 	}
 
-	public VideoFrameHandler(byte key[]) {
+	public VideoFrameHandler(Integer channel, byte key[]) {
 		this.assumeEncrypted = true;
 		try {
 			this.decryptor = Cipher.getInstance("AES/CBC/NOPADDING");
@@ -44,10 +45,11 @@ public class VideoFrameHandler implements PacketHandler {
 			throw new AssertionError(e);
 		}
 		this.key = new SecretKeySpec(key, "AES");
+		this.channel = channel;
 	}
 
 	// Video channel to output, if containerized. Null if raw stream output
-	private final Integer channel = null;
+	private final Integer channel;
 	private final boolean assumeEncrypted;
 	private final Cipher decryptor;
 	private final SecretKeySpec key;
@@ -91,6 +93,9 @@ public class VideoFrameHandler implements PacketHandler {
 		// Handle content
 
 		// 1) output channel header (not implemented)
+		if(channel != null) {
+			throw new UnsupportedOperationException("multi channel outputs are not supported yet");
+		}
 
 		// 2) copy frame content
 		int chunkSize = frameLength;

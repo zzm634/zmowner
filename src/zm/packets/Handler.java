@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public interface PacketHandler {
+public interface Handler {
 
 	/**
 	 * Handles the incoming packet contents (minus the header) from the given input

@@ -1,6 +1,6 @@
 package zm.packets;
 
-public class UnknownHeaderException extends Exception {
+public class UnknownHeaderException extends RuntimeException {
 	public UnknownHeaderException(byte header[]) {
 		super(String.format("Encountered unknown packet header: %02X %02X %02X %02X",
 				(int)(header[0]),

@@ -1,8 +1,8 @@
 package zm.packets;
 
-public class UnhandledHeaderException extends Exception {
-	public UnhandledHeaderException(PacketHeader header) {
+public class UnhandledHeaderException extends RuntimeException {
+	public UnhandledHeaderException(Header header) {
 		super(String.format("Encountered header %s but no PacketHandler was registered to "
-				+ "handle it.", header.name()));
+				+ "handle it.", header.getName()));
 	}
 }

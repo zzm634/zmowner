@@ -26,10 +26,18 @@ public class StreamScanner {
 		return bbuf.getInt();
 	}
 
+	public long nextUInt32() throws IOException, InterruptedException {
+		return Integer.toUnsignedLong(nextInt32());
+	}
+
 	public short nextInt16() throws IOException, InterruptedException {
 		StreamUtils.blockingReadExact(in, buf, 0, 2);
 		bbuf.rewind();
 		return bbuf.getShort();
+	}
+
+	public int nextUInt16()  throws IOException, InterruptedException {
+		return Short.toUnsignedInt(nextInt16());
 	}
 
 	public char nextInt8() throws IOException, InterruptedException {

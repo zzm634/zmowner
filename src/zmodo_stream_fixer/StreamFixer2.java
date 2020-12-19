@@ -6,8 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
-import zm.packets.PacketHeader;
-import zm.packets.StreamProcessor;
+import zm.packets.PacketIdentifier;
+import zm.packets.PacketProcessor;
 import zm.packets.UnhandledHeaderException;
 import zm.packets.UnknownHeaderException;
 import zm.packets.VideoFrameHandler;
@@ -38,12 +38,8 @@ public class StreamFixer2 {
 			in = System.in;
 		}
 
-		StreamProcessor processor = new StreamProcessor();
-		processor.registerHandler(PacketHeader.PFRAME_0, new VideoFrameHandler(key));
-		processor.registerHandler(PacketHeader.IFRAME_0, new VideoFrameHandler());
-
 		try {
-			processor.process(in, System.out);
+			PacketProcessor.getDefaultProcessor(key).handle(in, System.out);
 		} catch (EOFException e) {
 			if (in.read() == -1) {
 				// no problem
