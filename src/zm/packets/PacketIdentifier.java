@@ -12,36 +12,36 @@ import java.util.TreeMap;
 
 public enum PacketIdentifier implements Header {
 
-	COMMAND(0x5555aaaa),
+	COMMAND(0x5555aaaa, null),
 
 	// Video stream P-frames, per channel
-	PFRAME_0("00dc"),
-	PFRAME_1("10dc"),
-	PFRAME_2("20dc"),
-	PFRAME_3("30dc"),
-	PFRAME_4("40dc"),
-	PFRAME_5("50dc"),
-	PFRAME_6("60dc"),
-	PFRAME_7("70dc"),
+	PFRAME_0("00dc", new VideoFrameHandler(0)),
+	PFRAME_1("10dc", new VideoFrameHandler(1)),
+	PFRAME_2("20dc", new VideoFrameHandler(2)),
+	PFRAME_3("30dc", new VideoFrameHandler(3)),
+	PFRAME_4("40dc", new VideoFrameHandler(4)),
+	PFRAME_5("50dc", new VideoFrameHandler(5)),
+	PFRAME_6("60dc", new VideoFrameHandler(6)),
+	PFRAME_7("70dc", new VideoFrameHandler(7)),
 
 	// Video stream I-frames, per channel
-	IFRAME_0("01dc"),
-	IFRAME_1("11dc"),
-	IFRAME_2("21dc"),
-	IFRAME_3("31dc"),
-	IFRAME_4("41dc"),
-	IFRAME_5("51dc"),
-	IFRAME_6("61dc"),
-	IFRAME_7("71dc"),
+	IFRAME_0("01dc", new VideoFrameHandler(0)),
+	IFRAME_1("11dc", new VideoFrameHandler(1)),
+	IFRAME_2("21dc", new VideoFrameHandler(2)),
+	IFRAME_3("31dc", new VideoFrameHandler(3)),
+	IFRAME_4("41dc", new VideoFrameHandler(4)),
+	IFRAME_5("51dc", new VideoFrameHandler(5)),
+	IFRAME_6("61dc", new VideoFrameHandler(6)),
+	IFRAME_7("71dc", new VideoFrameHandler(7)),
 
-	AUDIO_0("01wb"),
-	AUDIO_1("11wb"),
-	AUDIO_2("21wb"),
-	AUDIO_3("31wb"),
-	AUDIO_4("41wb"),
-	AUDIO_5("51wb"),
-	AUDIO_6("61wb"),
-	AUDIO_7("71wb");
+	AUDIO_0("01wb", new AudioFrameHandler(0)),
+	AUDIO_1("11wb", new AudioFrameHandler(1)),
+	AUDIO_2("21wb", new AudioFrameHandler(2)),
+	AUDIO_3("31wb", new AudioFrameHandler(3)),
+	AUDIO_4("41wb", new AudioFrameHandler(4)),
+	AUDIO_5("51wb", new AudioFrameHandler(5)),
+	AUDIO_6("61wb", new AudioFrameHandler(6)),
+	AUDIO_7("71wb", new AudioFrameHandler(7));
 
 	public static final List<PacketIdentifier> IFRAME_IDS = Arrays.asList(
 			IFRAME_0,
@@ -78,25 +78,22 @@ public enum PacketIdentifier implements Header {
 		return this.identifier;
 	}
 
-	@Override
-	public Integer getMetadataLength() {
-		return this.headerLength;
-	}
-
-	private PacketIdentifier(byte[] identifier) {
+	private PacketIdentifier(byte[] identifier, Handler defaultHandler) {
 		assert identifier.length == 4;
 		this.identifier = identifier;
 		this.headerLength = null;
+		this.defaultHandler = defaultHandler;
 	}
 
-	private PacketIdentifier(String idString) {
+	private PacketIdentifier(String idString, Handler defaultHandler) {
 		assert idString.length() == 4;
 		this.identifier = idString.getBytes();
 		assert this.identifier.length == 4;
 		this.headerLength = null;
+		this.defaultHandler = defaultHandler;
 	}
 
-	private PacketIdentifier(long id) {
+	private PacketIdentifier(long id, Handler defaultHandler) {
 
 		this.identifier = new byte[4];
 		ByteBuffer bb = ByteBuffer.wrap(this.identifier);
@@ -104,6 +101,7 @@ public enum PacketIdentifier implements Header {
 		bb.putInt((int) id);
 
 		this.headerLength = null;
+		this.defaultHandler = defaultHandler;
 	}
 
 	public static PacketIdentifier get(byte headerValue[]) {
@@ -137,7 +135,13 @@ public enum PacketIdentifier implements Header {
 		return this.name();
 	}
 
+	@Override
+	public Handler getDefaultHandler() {
+		return defaultHandler;
+	}
+
 	private final byte[] identifier;
+	private final Handler defaultHandler;
 
 	/**
 	 * The size of the header metadata content, in bytes, if known. Does not include

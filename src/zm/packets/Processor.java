@@ -20,12 +20,13 @@ public abstract class Processor<HEADER extends Header> implements Handler {
 
 		this.headerBuf = new byte[this.getHeaderLength()];
 
-		// optimize this later to use enums.
+		// optimize this later to use enum map.
 		this.handlers = new HashMap<>();
 
 		for(HEADER h : headers) {
-			if(h.getMetadataLength() != null) {
-				handlers.putIfAbsent(h, new DiscardHandler(h));
+			Handler handler = h.getDefaultHandler();
+			if(handler != null) {
+				registerHandler(h, handler);
 			}
 		}
 	}

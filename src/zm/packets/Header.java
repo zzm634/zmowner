@@ -19,10 +19,8 @@ public interface Header {
 	 */
 	byte[] getIdentifier();
 
-	/**
-	 * Returns the length of the metadata of this header (minus the identifier), if
-	 * the header always has a fixed length. Otherwise null.
-	 */
-	Integer getMetadataLength();
+	default Handler getDefaultHandler() {
+		return null;
+	}
 
 }

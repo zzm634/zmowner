@@ -7,12 +7,6 @@ import java.io.OutputStream;
 class DiscardHandler implements Handler {
 	private final int discardBytes;
 
-	public DiscardHandler(Header h) {
-		assert h.getMetadataLength() != null;
-
-		this.discardBytes = h.getMetadataLength();
-	}
-
 	public DiscardHandler(int bytesToDiscard) {
 		assert bytesToDiscard >= 0;
 

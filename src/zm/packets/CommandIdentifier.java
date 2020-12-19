@@ -8,13 +8,22 @@ import java.util.Map;
 enum CommandIdentifier implements Header {
 	// write these "big-endian" because they're easier to read
 	// actual values are read little-endian.
-	GET_KEY(0x3639);
+	GET_KEY(0x3696),
+	START_720P(0xa290 , new DiscardHandler(8)),
+	START_VGA(0x0050, new DiscardHandler(4)),
+	G_TALK_SETTING(0x6090, new DiscardHandler(8)),
+	SET_AUDIOSWITCH(0x6690, new DiscardHandler(4));
 
 	private CommandIdentifier(long id) {
+		this(id, null);
+	}
+
+	private CommandIdentifier(long id, Handler defaultHandler) {
 		short sId = (short) id;
 		ByteBuffer bb = ByteBuffer.wrap(this.identifier);
 		bb.order(ByteOrder.BIG_ENDIAN);
 		bb.putShort(sId);
+		this.defaultHandler = defaultHandler;
 	}
 
 	public static CommandIdentifier get(byte identifier[]) {
@@ -41,7 +50,9 @@ enum CommandIdentifier implements Header {
 	}
 
 	@Override
-	public Integer getMetadataLength() {
-		return null;
+	public Handler getDefaultHandler() {
+		return this.defaultHandler;
 	}
+
+	private final Handler defaultHandler;
 }
