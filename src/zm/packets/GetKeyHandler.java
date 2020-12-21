@@ -26,11 +26,13 @@ public class GetKeyHandler implements Handler {
 
 		byte key[] = new byte[32];
 		s.next(key);
+//
+//		int channel = 0;
+//		for(PacketIdentifier p : PacketIdentifier.PFRAME_IDS) {
+//			processor.registerHandler(p, new VideoFrameHandler(channel++, key));
+//		}
 
-		int channel = 0;
-		for(PacketIdentifier p : PacketIdentifier.PFRAME_IDS) {
-			processor.registerHandler(p, new VideoFrameHandler(channel++, key));
-		}
+		processor.setAesKey(key);
 
 		// skip the rest of the response
 		s.skip(1024 - 32);

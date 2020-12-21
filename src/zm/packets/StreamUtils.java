@@ -4,6 +4,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 /**
  * Various utilities methods for working with streams.
@@ -97,7 +98,9 @@ public class StreamUtils {
 				throw new InterruptedException();
 			}
 
-			if (in.read() == -1)
+			int b = in.read();
+
+			if (b == -1)
 				break;
 			bytesDiscarded++;
 		}
@@ -178,4 +181,38 @@ public class StreamUtils {
 	}
 
 	private static final byte[] COPY_BUFFER = new byte[65536];
+	static final OutputStream NULL = new OutputStream() {
+		@Override
+		public void write(int b) throws IOException {
+			// do nothing
+		}
+	};
+	public static byte[] parseHex(String hex) {
+		byte bytes[] = new byte[hex.length() / 2];
+		ByteBuffer bb = ByteBuffer.wrap(bytes);
+		while (!hex.isEmpty()) {
+			String digit = hex.substring(0, 2);
+			int value = Integer.parseInt(digit, 16);
+			bb.put((byte) value);
+			hex = hex.substring(2);
+		}
+
+		return bytes;
+	}
+
+	public static int fromUnsigned(byte b) {
+		return ((int)b) & 0xFF;
+	}
+
+	public static String byteToHex(byte[] data) {
+		return byteToHex(data, 0, data.length);
+	}
+
+	public static String byteToHex(byte[] data, int offset, int length) {
+		StringBuilder sb = new StringBuilder(data.length * 2);
+		for (int i = offset; i < offset + length; ++i) {
+			sb.append(Integer.toHexString(data[i]));
+		}
+		return sb.toString();
+	}
 }

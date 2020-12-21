@@ -15,18 +15,11 @@ public class Nullify implements Handler {
 		this.wrapped = wrapped;
 	}
 
-	private static final OutputStream NULL = new OutputStream() {
-		@Override
-		public void write(int b) throws IOException {
-			// do nothing
-		}
-	};
-
 	private final Handler wrapped;
 
 	@Override
 	public void handle(InputStream in, OutputStream out) throws IOException, InterruptedException {
-		wrapped.handle(in, NULL);
+		wrapped.handle(in, StreamUtils.NULL);
 	}
 
 }

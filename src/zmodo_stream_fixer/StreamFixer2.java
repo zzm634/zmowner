@@ -39,7 +39,10 @@ public class StreamFixer2 {
 		}
 
 		try {
-			PacketProcessor.getDefaultProcessor(key, true).handle(in, System.out);
+			PacketProcessor pp = PacketProcessor.getDefaultProcessor(true);
+			pp.setAesKey(key);
+
+			pp.process(in, System.out);
 		} catch (EOFException e) {
 			if (in.read() == -1) {
 				// no problem

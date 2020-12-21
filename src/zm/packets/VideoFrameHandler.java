@@ -3,10 +3,14 @@ package zm.packets;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Optional;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -17,48 +21,47 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class VideoFrameHandler implements Handler {
 
+	private final Optional<PacketProcessor> parent;
 
 	/**
 	 * No decryption. Used for I-frames
 	 */
 	public VideoFrameHandler(Integer channel) {
-		this.channel = channel;
+		assert channel == null || (channel >= 0 && channel < 10);
+		this.parent = Optional.empty();
 		this.assumeEncrypted = false;
 		this.decryptor = null;
-		this.key = null;
+		this.channel = channel;
 	}
 
 	/**
-	 * Assumes frames are decrypted, Used for P-frames.
-	 *
-	 * @param key
+	 * Assumes frames are encrypted, Used for P-frames.
 	 */
-	public VideoFrameHandler(Integer channel, String key) {
-		this(channel, key.getBytes());
-	}
-
-	public VideoFrameHandler(Integer channel, byte key[]) {
+	public VideoFrameHandler(Integer channel, PacketProcessor parent) {
+		assert channel == null || (channel >= 0 && channel < 10);
+		this.parent = Optional.ofNullable(parent);
 		this.assumeEncrypted = true;
 		try {
 			this.decryptor = Cipher.getInstance("AES/CBC/NOPADDING");
 		} catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
 			throw new AssertionError(e);
 		}
-		this.key = new SecretKeySpec(key, "AES");
 		this.channel = channel;
 	}
 
 	// Video channel to output, if containerized. Null if raw stream output
 	private final Integer channel;
+
 	private final boolean assumeEncrypted;
 	private final Cipher decryptor;
-	private final SecretKeySpec key;
 
 	// frame encryption always uses 0 IVs
 	private final byte[] ivBytes = new byte[16];
-
 	private static final int ENCRYPTED_BYTES = 256;
 	private final byte[] encryptedDataBuffer = new byte[ENCRYPTED_BYTES];
+
+	private final byte[] chunkSizeBytes = new byte[4];
+	private final ByteBuffer chunkSizeBB = ByteBuffer.wrap(chunkSizeBytes).order(ByteOrder.LITTLE_ENDIAN);
 
 	private IvParameterSpec getIVs() {
 		Arrays.fill(ivBytes, (byte) 0);
@@ -90,17 +93,29 @@ public class VideoFrameHandler implements Handler {
 		// encrypted, but I don't know which one.
 		final boolean encrypted = false;
 
+		SecretKeySpec key = parent.map(PacketProcessor::getAesKey).orElse(null);
+
+		if ((encrypted || assumeEncrypted) && key == null) {
+			System.err.println("encountered encrypted frame but no AES key provided. skipping...");
+			out = StreamUtils.NULL;
+		}
+
 		// Handle content
 
-		// 1) output channel header (not implemented)
-		if(channel != null) {
-			throw new UnsupportedOperationException("multi channel outputs are not supported yet");
+		// 1) output channel
+		if (channel != null) {
+			out.write(String.format("%d0dc", channel).getBytes(Charset.forName("UTF-8")));
+			chunkSizeBB.rewind();
+			chunkSizeBB.putInt(frameLength);
+
+			out.write(chunkSizeBytes);
+
 		}
 
 		// 2) copy frame content
 		int chunkSize = frameLength;
 
-		if (encrypted || assumeEncrypted) {
+		if ((encrypted || assumeEncrypted) && key != null) {
 			// decrypt first ENCRYPTED_BYTES bytes only.
 
 			try {
@@ -164,7 +179,5 @@ public class VideoFrameHandler implements Handler {
 //	mbedtls_aes_free( &ctx );
 //	return 0;
 //}
-
-
 
 }

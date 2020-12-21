@@ -117,7 +117,7 @@ public class StreamFixer {
 
 					StreamUtils.blockingReadExact(in, buffer, 0, toRead);
 					if (PRINT_HEX) {
-						System.out.print(byteToHex(buffer, 0, toRead));
+						System.out.print(StreamUtils.byteToHex(buffer, 0, toRead));
 					} else {
 						System.out.write(buffer, 0, toRead);
 					}
@@ -133,15 +133,7 @@ public class StreamFixer {
 	}
 
 	private static String byteToHex(byte[] data) {
-		return byteToHex(data, 0, data.length);
-	}
-
-	private static String byteToHex(byte[] data, int offset, int length) {
-		StringBuilder sb = new StringBuilder(data.length * 2);
-		for (int i = offset; i < offset + length; ++i) {
-			sb.append(Integer.toHexString(data[i]));
-		}
-		return sb.toString();
+		return StreamUtils.byteToHex(data, 0, data.length);
 	}
 
 }

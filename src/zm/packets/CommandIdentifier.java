@@ -5,12 +5,12 @@ import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 
-enum CommandIdentifier implements Header {
+enum CommandIdentifier implements Identifier {
 	// write these "big-endian" because they're easier to read
 	// actual values are read little-endian.
 	GET_KEY(0x3696),
-	START_720P(0xa290 , new DiscardHandler(8)),
-	START_VGA(0x0050, new DiscardHandler(4)),
+	START_VGA(0xa290 , new DiscardHandler(4)),
+	START_720P(0x0050, new DiscardHandler(4)),
 	G_TALK_SETTING(0x6090, new DiscardHandler(8)),
 	SET_AUDIOSWITCH(0x6690, new DiscardHandler(4));
 
@@ -45,7 +45,7 @@ enum CommandIdentifier implements Header {
 	}
 
 	@Override
-	public byte[] getIdentifier() {
+	public byte[] getBytes() {
 		return this.identifier;
 	}
 

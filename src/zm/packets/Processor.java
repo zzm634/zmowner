@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class Processor<HEADER extends Header> implements Handler {
+public abstract class Processor<HEADER extends Identifier> implements Handler {
 
 	private final byte headerBuf[];
 
@@ -23,9 +23,9 @@ public abstract class Processor<HEADER extends Header> implements Handler {
 		// optimize this later to use enum map.
 		this.handlers = new HashMap<>();
 
-		for(HEADER h : headers) {
+		for (HEADER h : headers) {
 			Handler handler = h.getDefaultHandler();
-			if(handler != null) {
+			if (handler != null) {
 				registerHandler(h, handler);
 			}
 		}
@@ -35,31 +35,42 @@ public abstract class Processor<HEADER extends Header> implements Handler {
 	public void handle(InputStream in, OutputStream out) throws IOException, InterruptedException {
 		final StreamScanner s = new StreamScanner(in);
 
-		while (true) {
-			if (Thread.interrupted()) {
+		// Read the header
+		s.next(headerBuf);
+		HEADER header = decodeHeader(headerBuf);
+		if (header == null) {
+			throw new UnknownHeaderException(headerBuf);
+		}
+
+		// find an appropriate handler
+		final Handler handler;
+		synchronized (handlers) {
+			handler = handlers.get(header);
+			if (handler == null) {
+				throw new UnhandledHeaderException(header);
+			}
+		}
+
+		// handle the packet data
+		handler.handle(headerBuf, in, out);
+	}
+
+	/**
+	 * Repeatedly handles data from the incoming input stream, until interrupted.
+	 *
+	 * @param in
+	 * @param out
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	public void process(InputStream in, OutputStream out) throws IOException, InterruptedException {
+		while(true) {
+			if(Thread.interrupted()) {
 				throw new InterruptedException();
 			}
 
-			// Read the header
-			s.next(headerBuf);
-			HEADER header = decodeHeader(headerBuf);
-			if (header == null) {
-				throw new UnknownHeaderException(headerBuf);
-			}
-
-			// find an appropriate handler
-			final Handler handler;
-			synchronized (handlers) {
-				handler = handlers.get(header);
-				if (handler == null) {
-					throw new UnhandledHeaderException(header);
-				}
-			}
-
-			// handle the packet data
-			handler.handle(in, out);
+			this.handle(in, out);
 		}
-
 	}
 
 	public void registerHandler(HEADER header, Handler handler) {

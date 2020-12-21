@@ -1,6 +1,9 @@
 package zm.packets;
 
+import java.nio.charset.Charset;
 import java.util.Arrays;
+
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * PacketProcessor handles the incoming data feed directly from the camera.
@@ -8,6 +11,24 @@ import java.util.Arrays;
  * @author zm
  */
 public class PacketProcessor extends Processor<PacketIdentifier> {
+
+	private SecretKeySpec aesKey = null;
+
+	public SecretKeySpec getAesKey() {
+		return aesKey;
+	}
+
+	public void setAesKey(SecretKeySpec aesKey) {
+		this.aesKey = aesKey;
+	}
+
+	public void setAesKey(byte[] aesKey) {
+		this.setAesKey(new SecretKeySpec(aesKey, "AES"));
+	}
+
+	public void setAesKey(String aesKey) {
+		this.setAesKey(aesKey.getBytes(Charset.forName("UTF-8")));
+	}
 
 	public PacketProcessor() {
 		super(Arrays.asList(PacketIdentifier.values()));
@@ -22,44 +43,30 @@ public class PacketProcessor extends Processor<PacketIdentifier> {
 		return PacketIdentifier.get(header);
 	}
 
-	public static PacketProcessor getDefaultProcessor(String aesKey, boolean singleStream) {
+	public static PacketProcessor getDefaultProcessor(boolean singleStream) {
 		PacketProcessor pp = new PacketProcessor();
 
-		int channel = 0;
-		for (PacketIdentifier i : PacketIdentifier.IFRAME_IDS) {
+		for(int channel = 0; channel < PacketIdentifier.IFRAME_IDS.size(); channel++) {
 			Integer ch = singleStream ? null : channel;
 
-			Handler h = new VideoFrameHandler(ch);
+			Handler iFrameHandler = new VideoFrameHandler(ch);
+			Handler pFrameHandler = new VideoFrameHandler(ch,pp);
+			Handler aFrameHandler = new AudioFrameHandler(ch);
 
 			if (singleStream && channel != 0) {
-				h = new Nullify(h);
+				iFrameHandler = new Nullify(iFrameHandler);
+				pFrameHandler = new Nullify(pFrameHandler);
+				aFrameHandler = new Nullify(aFrameHandler);
 			}
 
-			pp.registerHandler(i, h);
-
-			channel++;
+			pp.registerHandler(PacketIdentifier.IFRAME_IDS.get(channel), iFrameHandler);
+			pp.registerHandler(PacketIdentifier.PFRAME_IDS.get(channel), pFrameHandler);
+			pp.registerHandler(PacketIdentifier.AUDIO_IDS.get(channel), aFrameHandler);
 		}
 
-		channel = 0;
-		for (PacketIdentifier p : PacketIdentifier.PFRAME_IDS) {
-			Integer ch = singleStream ? null : channel;
-
-			Handler h = aesKey != null
-					? new VideoFrameHandler(channel, aesKey)
-					: new VideoFrameHandler(channel);
-
-			if (singleStream && channel != 0) {
-				h = new Nullify(h);
-			}
-
-			pp.registerHandler(p, h);
-
-			channel++;
-		}
 
 		pp.registerHandler(PacketIdentifier.COMMAND, CommandProcessor.getDefaultProcessor(pp));
-
-		// do audio frame handlers?
+		pp.registerHandler(PacketIdentifier.FILE_HEADER_264, new FileHeader264Handler(pp));
 
 		return pp;
 

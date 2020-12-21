@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-public enum PacketIdentifier implements Header {
+public enum PacketIdentifier implements Identifier {
 
-	COMMAND(0x5555aaaa, null),
+	COMMAND(StreamUtils.parseHex("5555aaaa"), null),
 
 	// Video stream P-frames, per channel
 	PFRAME_0("00dc", new VideoFrameHandler(0)),
@@ -41,7 +41,10 @@ public enum PacketIdentifier implements Header {
 	AUDIO_4("41wb", new AudioFrameHandler(4)),
 	AUDIO_5("51wb", new AudioFrameHandler(5)),
 	AUDIO_6("61wb", new AudioFrameHandler(6)),
-	AUDIO_7("71wb", new AudioFrameHandler(7));
+	AUDIO_7("71wb", new AudioFrameHandler(7)),
+
+	// Contains encryption key, see FileHeader264Handler
+	FILE_HEADER_264(StreamUtils.parseHex("78563412"), new DiscardHandler(0x200));
 
 	public static final List<PacketIdentifier> IFRAME_IDS = Arrays.asList(
 			IFRAME_0,
@@ -74,7 +77,7 @@ public enum PacketIdentifier implements Header {
 			AUDIO_7);
 
 	@Override
-	public byte[] getIdentifier() {
+	public byte[] getBytes() {
 		return this.identifier;
 	}
 
@@ -89,17 +92,6 @@ public enum PacketIdentifier implements Header {
 		assert idString.length() == 4;
 		this.identifier = idString.getBytes();
 		assert this.identifier.length == 4;
-		this.headerLength = null;
-		this.defaultHandler = defaultHandler;
-	}
-
-	private PacketIdentifier(long id, Handler defaultHandler) {
-
-		this.identifier = new byte[4];
-		ByteBuffer bb = ByteBuffer.wrap(this.identifier);
-		bb.order(ByteOrder.BIG_ENDIAN);
-		bb.putInt((int) id);
-
 		this.headerLength = null;
 		this.defaultHandler = defaultHandler;
 	}
