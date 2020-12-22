@@ -1,10 +1,18 @@
 # Zmowner
 
-This is an attempt to reverse-engineer the protocol used by Zmodo IP cameras in order to make use of the video and audio feeds. Currently, it is extremely barebones, and won't work without some extra know-how. Upcoming features include:
+This is an attempt to reverse-engineer the protocol used by Zmodo IP cameras in order to make use of the video and audio feeds. Currently, it is extremely barebones, and won't work without some extra know-how.
 
-- Audio streaming
-- Framerate detection
-- Packaging multiple video and audio streams
+Upcoming features:
+(Already present in camera data, just need to parse):
+- Audio support
+- Multiple video stream support
+- Doorbell press
+- Motion detection
+
+  
+App:
+- Automatic retry if connection drops
+- publishing event data (motion, doorbell press) to other services
 
 ## Disclaimer
 
