@@ -15,19 +15,22 @@ public class FileHeader264Handler implements Handler {
 
 	@Override
 	public void handle(InputStream in, OutputStream out) throws IOException, InterruptedException {
-		// total of 512 bytes before data starts.
-		// header has 4 bytes, then 12 bytes of nothing, then the key, then more zeroes.
+		// total of 512 bytes before video data starts.
+		// header has 4 bytes, (xV4something)
 
 		// note that header already gets skipped
 		StreamScanner s = new StreamScanner(in);
+		s.setByteIndex(4);
 
-		s.skip(12);
+		// aes key starts at 0x70
+		s.skipTo(0x70);
 
 		byte aesKey[] = new byte[32];
 		s.next(aesKey);
 		parent.setAesKey(aesKey);
-
-		s.skip(512-(4+12+32));
+		
+		// data starts at 0x200
+		s.skipTo(0x200);
 	}
 
 }

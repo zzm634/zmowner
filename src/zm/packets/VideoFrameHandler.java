@@ -67,10 +67,11 @@ public class VideoFrameHandler implements Handler {
 		Arrays.fill(ivBytes, (byte) 0);
 		return new IvParameterSpec(ivBytes);
 	}
-
+	
 	@Override
 	public void handle(InputStream in, OutputStream out) throws IOException, InterruptedException {
 		StreamScanner s = new StreamScanner(in);
+		s.setByteIndex(4); // offset to include the header identifier
 
 		// Parse header
 		final int frameLength = s.nextInt32();

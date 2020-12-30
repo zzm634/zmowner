@@ -9,7 +9,9 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Processes incoming "command" echoes or responses (0x55 0x55 0xAA 0xAA)
+ * Processes incoming "command" echoes or responses.
+ * <p>
+ * Command packets start with the sequence [0x55, 0x55, 0xAA, 0xAA], followed by two(4?) bytes (little endian) of payload size
  *
  * Does various things: - Update the parent stream handler with new
  * VideoFrameHandlers if a new encryption key is encountered.
@@ -21,6 +23,7 @@ public class CommandProcessor extends Processor<CommandIdentifier> implements Ha
 
 	public CommandProcessor() {
 		super(Arrays.asList(CommandIdentifier.values()));
+		this.registerDefaultHandler(new UnknownCommandHandler());
 	}
 
 	@Override

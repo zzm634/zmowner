@@ -5,6 +5,11 @@ import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A 2 byte sequence that identifies the type of command in a command packet's 8-byte body
+ * @author zm
+ *
+ */
 enum CommandIdentifier implements Identifier {
 	// write these "big-endian" because they're easier to read
 	// actual values are read little-endian.

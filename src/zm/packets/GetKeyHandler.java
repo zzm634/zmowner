@@ -11,7 +11,7 @@ import java.util.Arrays;
  *
  * @author zm
  */
-public class GetKeyHandler implements Handler {
+public class GetKeyHandler extends CommandHandler {
 
 	public GetKeyHandler(PacketProcessor processor) {
 		this.processor = processor;
@@ -20,21 +20,21 @@ public class GetKeyHandler implements Handler {
 	private final PacketProcessor processor;
 
 	@Override
-	public void handle(InputStream in, OutputStream out) throws IOException, InterruptedException {
-		// The "get key" metadata response is 1024 bytes long, where the first 32 are the key and the rest are zeroes
+	protected void handle(CommandHeader header, InputStream in, OutputStream out)
+			throws IOException, InterruptedException {
+		
+		// The "get key" metadata response is 1024 bytes long, where the first 32 are
+		// the key and the rest are zeroes
 		StreamScanner s = new StreamScanner(in);
 
 		byte key[] = new byte[32];
 		s.next(key);
-//
-//		int channel = 0;
-//		for(PacketIdentifier p : PacketIdentifier.PFRAME_IDS) {
-//			processor.registerHandler(p, new VideoFrameHandler(channel++, key));
-//		}
 
-		processor.setAesKey(key);
+		if (processor != null)
+			processor.setAesKey(key);
 
 		// skip the rest of the response
-		s.skip(1024 - 32);
+		s.skip(header.getPayloadLength() - key.length);
+
 	}
 }

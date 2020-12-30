@@ -31,23 +31,35 @@ public abstract class Processor<HEADER extends Identifier> implements Handler {
 		}
 	}
 
+	private Handler defaultHandler = null;
+
 	@Override
 	public void handle(InputStream in, OutputStream out) throws IOException, InterruptedException {
 		final StreamScanner s = new StreamScanner(in);
 
 		// Read the header
 		s.next(headerBuf);
-		HEADER header = decodeHeader(headerBuf);
-		if (header == null) {
-			throw new UnknownHeaderException(headerBuf);
-		}
-
+		
 		// find an appropriate handler
-		final Handler handler;
-		synchronized (handlers) {
-			handler = handlers.get(header);
-			if (handler == null) {
-				throw new UnhandledHeaderException(header);
+		Handler handler;
+
+		HEADER header = decodeHeader(headerBuf);
+		try {
+			if (header == null) {
+				throw new UnknownHeaderException(headerBuf);
+			}
+
+			synchronized (handlers) {
+				handler = handlers.get(header);
+				if (handler == null) {
+					throw new UnhandledHeaderException(header);
+				}
+			}
+		} catch (UnknownHeaderException | UnhandledHeaderException e) {
+			if (defaultHandler != null) {
+				handler = defaultHandler;
+			} else {
+				throw e;
 			}
 		}
 
@@ -64,8 +76,8 @@ public abstract class Processor<HEADER extends Identifier> implements Handler {
 	 * @throws InterruptedException
 	 */
 	public void process(InputStream in, OutputStream out) throws IOException, InterruptedException {
-		while(true) {
-			if(Thread.interrupted()) {
+		while (true) {
+			if (Thread.interrupted()) {
 				throw new InterruptedException();
 			}
 
@@ -75,6 +87,10 @@ public abstract class Processor<HEADER extends Identifier> implements Handler {
 
 	public void registerHandler(HEADER header, Handler handler) {
 		handlers.put(header, handler);
+	}
+	
+	public void registerDefaultHandler(Handler handler) {
+		this.defaultHandler = handler;
 	}
 
 	private final Map<HEADER, Handler> handlers;
